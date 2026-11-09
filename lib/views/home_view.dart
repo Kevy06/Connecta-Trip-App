@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/destino.dart';
+import '../models/opcao_catalogo.dart';
 import '../presenters/home_presenter.dart';
+import '../utils/app_routes.dart';
+import '../services/sessao_service.dart';
+import '../services/viagem_service.dart';
+import '../widgets/imagem_rede.dart';
 import '../utils/app_colors.dart';
-// Descomentar o import abaixo quando a Tela 03 for implementada
-// import 'detalhes_destino_view.dart';
 
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
@@ -19,30 +22,35 @@ class _HomeViewState extends State<HomeView> {
   // Controla a aba de categoria ativa (0: Pacotes, 1: Passagens, 2: Hotéis)
   int _categoriaSelecionada = 0;
 
-  //  Substituir pelo nome vindo do usuário autenticado / sessão
-  String nomeUsuario = "Luiz";
+  final _scaffoldKey = GlobalKey<ScaffoldState>();
+  String _busca = '';
 
-  // Função centralizada para lidar com o clique nos cartões de destino (Destaque e Recomendados)
-  void _abrirDetalhesDestino(Destino destino) {
-    // Descomentar o Navigator abaixo quando DetalhesDestinoView estiver pronta
-    /*
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => DetalhesDestinoView(destino: destino),
-      ),
-    );
-    */
-    debugPrint('Navegando para o pacote: ${destino.nome}');
-  }
+  void _abrirDetalhesDestino(Destino destino) =>
+      AppRoutes.abrirDetalhesDestino(context, destino);
 
   @override
   Widget build(BuildContext context) {
     // Busca os dados dinâmicos através da camada Presenter
     final destaque = _presenter.obterDestinoDestaque();
-    final recomendados = _presenter.obterRecomendados();
+    final recomendados = _presenter.obterRecomendados().where((d) =>
+      '${d.nome} ${d.pais}'.toLowerCase().contains(_busca.toLowerCase())).toList();
+    final nomeUsuario = SessaoService().usuarioAtual?.primeiroNome ?? 'viajante';
 
     return Scaffold(
+      key: _scaffoldKey,
+      drawer: Drawer(child: SafeArea(child: ListView(children: [
+        const DrawerHeader(child: Column(mainAxisAlignment: MainAxisAlignment.center,
+          children: [Icon(Icons.travel_explore, size: 48, color: AppColors.primaryTeal),
+            Text('Connecta Trip', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold))])),
+        ListTile(leading: const Icon(Icons.explore), title: const Text('Destinos'),
+          onTap: () { Navigator.pop(context); AppNavigation.irParaAba(AppNavigation.destinos); }),
+        ListTile(leading: const Icon(Icons.luggage), title: const Text('Minhas viagens'),
+          onTap: () { Navigator.pop(context); AppNavigation.irParaAba(AppNavigation.viagens); }),
+        ListTile(leading: const Icon(Icons.person), title: const Text('Meu perfil'),
+          onTap: () { Navigator.pop(context); AppNavigation.irParaAba(AppNavigation.perfil); }),
+        ListTile(leading: const Icon(Icons.favorite), title: const Text('Favoritos'),
+          onTap: () { Navigator.pop(context); AppRoutes.abrirFavoritos(context); }),
+      ]))),
       backgroundColor: AppColors.background,
       appBar: AppBar(
         backgroundColor: AppColors.background,
@@ -50,7 +58,7 @@ class _HomeViewState extends State<HomeView> {
         leading: IconButton(
           icon: const Icon(Icons.menu, color: AppColors.primaryDark),
           onPressed: () {
-            // Implementar abertura do Drawer (menu lateral)
+            _scaffoldKey.currentState?.openDrawer();
           },
         ),
         title: Image.asset(
@@ -63,7 +71,14 @@ class _HomeViewState extends State<HomeView> {
           IconButton(
             icon: const Icon(Icons.notifications_none, color: AppColors.primaryDark),
             onPressed: () {
-              // Implementar navegação para a tela/modal de notificações
+              final lista = ViagemService().obterViagens();
+              showDialog<void>(context: context, builder: (context) => AlertDialog(
+                title: const Text('Notificações'),
+                content: Text(lista.isEmpty ? 'Nenhuma solicitação ainda.' :
+                  'Você tem ${lista.length} solicitação(ões). Confira o status na aba Viagens.'),
+                actions: [TextButton(onPressed: () => Navigator.pop(context),
+                  child: const Text('OK'))],
+              ));
             },
           ),
         ],
@@ -93,7 +108,7 @@ class _HomeViewState extends State<HomeView> {
             // --- SEÇÃO 2: Barra de Pesquisa ---
             TextField(
               onChanged: (valor) {
-                // TODO (Equipe): Conectar filtro de busca ao HomePresenter
+                setState(() => _busca = valor);
               },
               decoration: InputDecoration(
                 hintText: 'Para onde você quer ir?',
@@ -120,8 +135,8 @@ class _HomeViewState extends State<HomeView> {
                 _buildCategoriaChip(2, Icons.bed_outlined, 'Hotéis'),
               ],
             ),
-            const SizedBox(height: 24),
-
+            if (_categoriaSelecionada == 0) ...[
+              const SizedBox(height: 24),
             // ---  Cartão Principal "Em Destaque" ---
             // Alimentado dinamicamente pelo objeto 'destaque' vindo do Presenter
             GestureDetector(
@@ -232,7 +247,7 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 TextButton(
                   onPressed: () {
-                    //  Redirecionar para a aba de Destinos (Tela 02) ou exibir lista completa
+                    AppNavigation.irParaAba(AppNavigation.destinos);
                   },
                   child: const Text(
                     'Ver todos',
@@ -244,7 +259,9 @@ class _HomeViewState extends State<HomeView> {
             const SizedBox(height: 8),
 
             // --- SEÇÃO 6: Lista de Destinos Recomendados (Ex: Paris, Orlando) ---
-            Row(
+            if (recomendados.isEmpty)
+              const Text('Nenhum destino encontrado. Veja todos na aba Destinos.'),
+            if (recomendados.isNotEmpty) Row(
               children: recomendados.map((destino) {
                 return Expanded(
                   child: Padding(
@@ -256,7 +273,138 @@ class _HomeViewState extends State<HomeView> {
                 );
               }).toList(),
             ),
+            ] else ...[
+              const SizedBox(height: 4),
+              Text(
+                _categoriaSelecionada == 2
+                    ? 'Hotéis para sua estadia'
+                    : 'Passagens para sua viagem',
+                style: const TextStyle(
+                  color: AppColors.primaryDark,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                _categoriaSelecionada == 2
+                    ? 'Escolha o destino e peça opções de hospedagem a um consultor.'
+                    : 'Consulte rotas aéreas de referência por destino e origem.',
+                style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+              ),
+              const SizedBox(height: 16),
+              ..._presenter.obterTodosDestinos()
+                  .where((d) => '${d.nome} ${d.pais}'.toLowerCase()
+                      .contains(_busca.toLowerCase()))
+                  .map((destino) => _buildCardServico(
+                    destino,
+                    tipo: _categoriaSelecionada == 2 ? TipoServico.hospedagem : TipoServico.passagem,
+                  )),
+              if (_presenter.obterTodosDestinos().where((d) =>
+                  '${d.nome} ${d.pais}'.toLowerCase()
+                      .contains(_busca.toLowerCase())).isEmpty)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 20),
+                  child: Text('Nenhum destino encontrado para a busca.'),
+                ),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  // Cartões grandes da aba Hotéis/Passagens, como no protótipo do grupo.
+  Widget _buildCardServico(Destino destino, {required TipoServico tipo}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Material(
+        borderRadius: BorderRadius.circular(17),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => AppRoutes.abrirCatalogo(
+            context, destino: destino, tipo: tipo),
+          child: SizedBox(
+            height: 130,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                ImagemRede(url: destino.imagemUrl),
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Colors.transparent, Color(0xCC000000)],
+                      stops: [0.30, 1.0],
+                    ),
+                  ),
+                ),
+                Positioned(
+                  left: 14,
+                  right: 12,
+                  bottom: 13,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${destino.nome}, ${destino.pais}',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              tipo == TipoServico.hospedagem
+                                ? 'Hotéis de referência • consultar disponibilidade'
+                                : 'Rotas aéreas • consultar passagens',
+                              style: TextStyle(
+                                color: Colors.white.withValues(alpha: 0.83),
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Material(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(18),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                tipo == TipoServico.hospedagem
+                                  ? 'Ver hotéis' : 'Ver rotas',
+                                style: const TextStyle(
+                                  color: AppColors.primaryDark,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(width: 4),
+                              const Icon(Icons.arrow_forward,
+                                  size: 13, color: AppColors.primaryTeal),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -269,7 +417,7 @@ class _HomeViewState extends State<HomeView> {
       child: GestureDetector(
         onTap: () {
           setState(() => _categoriaSelecionada = index);
-          //  Filtrar conteúdo exibido conforme a categoria selecionada
+          // Alterna o conteúdo da Home de acordo com a categoria selecionada.
         },
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
@@ -325,12 +473,8 @@ class _HomeViewState extends State<HomeView> {
           children: [
             ClipRRect(
               borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-              child: Image.network(
-                destino.imagemUrl,
-                height: 100,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: ImagemRede(url: destino.imagemUrl,
+                height: 100, width: double.infinity),
             ),
             Padding(
               padding: const EdgeInsets.all(12),

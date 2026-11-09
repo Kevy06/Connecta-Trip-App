@@ -11,8 +11,10 @@ import '../widgets/chip_filtro.dart';
 class SolicitacaoView extends StatefulWidget {
   final Destino? destino;
   final Set<String>? interessesIniciais;
+  final String observacoesIniciais;
 
-  const SolicitacaoView({super.key, this.destino, this.interessesIniciais});
+  const SolicitacaoView({super.key, this.destino, this.interessesIniciais,
+    this.observacoesIniciais = ''});
 
   @override
   State<SolicitacaoView> createState() => _SolicitacaoViewState();
@@ -22,8 +24,10 @@ class _SolicitacaoViewState extends State<SolicitacaoView> {
   late final SolicitacaoPresenter _presenter = SolicitacaoPresenter(
     destino: widget.destino,
     interessesIniciais: widget.interessesIniciais,
+    observacoesIniciais: widget.observacoesIniciais,
   );
-  final TextEditingController _observacoes = TextEditingController();
+  late final TextEditingController _observacoes =
+    TextEditingController(text: widget.observacoesIniciais);
 
   int _etapa = 0;
   bool _enviando = false;

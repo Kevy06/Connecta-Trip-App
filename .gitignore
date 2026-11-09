@@ -46,3 +46,23 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Dados e segredos locais (não enviar ao repositório)
+backend/data/
+backend/node_modules/
+backend/*.db
+backend/*.sqlite
+backend/*.sqlite3
+*.db
+*.sqlite
+*.sqlite3
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.p12
+*.pem
+android/local.properties
+android/key.properties
+android/.gradle/

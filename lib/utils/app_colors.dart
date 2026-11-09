@@ -9,6 +9,8 @@ class AppColors {
   // Cores de fundo e cartões
   static const Color background = Color(0xFFF5F7FA); 
   static const Color cardBackground = Colors.white;
+  static const Color border = Color(0xFFE0E5EB);
+  static const Color success = Color(0xFF258B58);
   static const Color searchBarBackground = Color(0xFFEEF2F6); 
 
   // Cores de texto

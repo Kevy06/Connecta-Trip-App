@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../models/consultor.dart';
 import '../services/consultor_service.dart';
+import '../services/mensagem_service.dart';
 import '../utils/app_colors.dart';
 
 /// "Falar com consultor": escolhe um consultor e escreve a mensagem.
 ///
-/// O envio real depende da API REST (ainda não existe); por ora a mensagem
-/// só é confirmada na tela.
+/// Mensagens são realmente gravadas no SQLite ou enviadas à API REST.
 class ConsultorSheet {
   static Future<void> mostrar(BuildContext context, {String? assunto}) async {
     final consultor = await showModalBottomSheet<Consultor>(
@@ -25,13 +25,18 @@ class ConsultorSheet {
     );
     if (mensagem == null || !context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'Mensagem para ${consultor.nome} registrada. O envio real será ligado à API.',
-        ),
-      ),
-    );
+    try {
+      await MensagemService().enviar(consultor, mensagem, assunto: assunto ?? '');
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Mensagem enviada para ${consultor.nome}. Veja as respostas em Perfil > Mensagens.'),
+      ));
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Falha ao enviar mensagem: $e'),
+      ));
+    }
   }
 }
 
@@ -62,6 +67,10 @@ class _ListaConsultores extends StatelessWidget {
               style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
             ),
             const SizedBox(height: 8),
+            if (consultores.isEmpty) const Padding(
+              padding: EdgeInsets.symmetric(vertical: 14),
+              child: Text('Nenhum consultor cadastrado ainda. Cadastre uma conta de consultor para habilitar este atendimento.'),
+            ),
             for (final c in consultores)
               ListTile(
                 contentPadding: EdgeInsets.zero,

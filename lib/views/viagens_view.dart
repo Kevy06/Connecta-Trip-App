@@ -1,7 +1,8 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../models/viagem.dart';
+import '../services/viagem_service.dart';
 import '../presenters/viagens_presenter.dart';
+import 'detalhe_solicitacao_view.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_routes.dart';
 import '../utils/formatadores.dart';
@@ -46,6 +47,12 @@ class _ViagensViewState extends State<ViagensView> {
                     padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
                     children: [
                       _cabecalho(),
+                      if (ViagemService().erroConexao != null) ...[
+                        Text(ViagemService().erroConexao!,
+                          style: const TextStyle(color: Colors.deepOrange)),
+                        TextButton(onPressed: () => ViagemService().carregar(),
+                          child: const Text('Tentar novamente')),
+                      ],
                       const SizedBox(height: 16),
                       _cartaoDestaque(destaque),
                       const SizedBox(height: 14),
@@ -327,18 +334,9 @@ class _ViagensViewState extends State<ViagensView> {
 
   /// Detalhes da solicitação: status, proposta recebida e aceite.
   void _abrirViagem(Viagem v) {
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => ListenableBuilder(
-        listenable: _presenter.listenable,
-        builder: (context, _) => _DetalheViagemSheet(viagem: v, presenter: _presenter),
-      ),
-    );
+    Navigator.of(context).push(MaterialPageRoute<void>(
+      builder: (_) => DetalheSolicitacaoView(viagemId: v.id),
+    ));
   }
 
   void _abrirDocumento(Viagem v, String tipo) {
@@ -394,233 +392,3 @@ class _Titulo extends StatelessWidget {
       );
 }
 
-class _DetalheViagemSheet extends StatelessWidget {
-  final Viagem viagem;
-  final ViagensPresenter presenter;
-
-  const _DetalheViagemSheet({required this.viagem, required this.presenter});
-
-  Future<void> _avaliar(BuildContext context) async {
-    final avaliacao = await showDialog<Avaliacao>(
-      context: context,
-      builder: (_) => const _DialogoAvaliacao(),
-    );
-    if (avaliacao == null) return;
-    presenter.avaliar(viagem.id, avaliacao.nota, avaliacao.comentario);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final proposta = viagem.proposta;
-    final passos = [
-      for (final s in StatusViagem.values)
-        PassoLinhaTempo(
-          titulo: s.rotulo,
-          descricao: '',
-          ativo: s.index <= viagem.status.index,
-        ),
-    ];
-
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Viagem a ${viagem.destino.nome}',
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              '${Formatadores.periodo(viagem.inicio, viagem.fim)} • ${viagem.orcamento}',
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
-            ),
-            const SizedBox(height: 16),
-            LinhaTempo(passos: passos),
-            if (proposta != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Proposta de ${proposta.consultor.nome}',
-                      style: const TextStyle(
-                        color: AppColors.primaryDark,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      '${Formatadores.moeda(proposta.valorEstimado)} (estimado)',
-                      style: const TextStyle(
-                        color: AppColors.primaryTeal,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    for (final item in proposta.itensIncluidos)
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: Text('• $item', style: const TextStyle(fontSize: 13)),
-                      ),
-                    const SizedBox(height: 8),
-                    Text(
-                      proposta.condicoes,
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Válida até ${Formatadores.data(proposta.validade)}',
-                      style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-            if (viagem.avaliacao != null) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  for (var i = 1; i <= 5; i++)
-                    Icon(
-                      i <= viagem.avaliacao!.nota ? Icons.star : Icons.star_border,
-                      color: AppColors.accentOrange,
-                      size: 22,
-                    ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Sua avaliação',
-                    style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 16),
-            if (viagem.status == StatusViagem.propostaRecebida)
-              BotaoPersonalizado(
-                texto: 'Aceitar proposta',
-                icone: Icons.check,
-                onPressed: () => presenter.aceitarProposta(viagem.id),
-              )
-            else if (viagem.status == StatusViagem.encerrada && viagem.avaliacao == null)
-              BotaoPersonalizado(
-                texto: 'Avaliar atendimento',
-                icone: Icons.star_border,
-                onPressed: () => _avaliar(context),
-              )
-            else
-              BotaoPersonalizado(
-                texto: 'Fechar',
-                outlined: true,
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            // Só em modo debug: no produto real quem avança o status é o consultor.
-            if (kDebugMode && viagem.status != StatusViagem.encerrada)
-              Padding(
-                padding: const EdgeInsets.only(top: 8),
-                child: Center(
-                  child: TextButton(
-                    onPressed: () => presenter.simularAvanco(viagem.id),
-                    child: const Text('Simular resposta do consultor (demo)'),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Avaliação do atendimento (só após o encerramento).
-class _DialogoAvaliacao extends StatefulWidget {
-  const _DialogoAvaliacao();
-
-  @override
-  State<_DialogoAvaliacao> createState() => _DialogoAvaliacaoState();
-}
-
-class _DialogoAvaliacaoState extends State<_DialogoAvaliacao> {
-  final TextEditingController _comentario = TextEditingController();
-  int _nota = 0;
-  bool _semNota = false;
-
-  @override
-  void dispose() {
-    _comentario.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: const Text('Avaliar atendimento'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              for (var i = 1; i <= 5; i++)
-                IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(minWidth: 40, minHeight: 40),
-                  onPressed: () => setState(() {
-                    _nota = i;
-                    _semNota = false;
-                  }),
-                  icon: Icon(
-                    i <= _nota ? Icons.star : Icons.star_border,
-                    color: AppColors.accentOrange,
-                  ),
-                ),
-            ],
-          ),
-          if (_semNota)
-            Text(
-              'Escolha de 1 a 5 estrelas.',
-              style: TextStyle(color: Theme.of(context).colorScheme.error, fontSize: 12),
-            ),
-          const SizedBox(height: 8),
-          TextField(
-            controller: _comentario,
-            maxLines: 3,
-            decoration: InputDecoration(
-              hintText: 'Comentário (opcional)',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancelar'),
-        ),
-        TextButton(
-          onPressed: () {
-            if (_nota == 0) {
-              setState(() => _semNota = true);
-              return;
-            }
-            Navigator.of(context).pop(Avaliacao(nota: _nota, comentario: _comentario.text));
-          },
-          child: const Text('Enviar'),
-        ),
-      ],
-    );
-  }
-}
