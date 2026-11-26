@@ -18,6 +18,11 @@ class SessaoService extends ChangeNotifier {
 
   Future<void> iniciar() async {
     if (!kIsWeb) await BancoLocal().db;
+    if (!ApiService.habilitada) {
+      await BancoLocal().atualizarContaViajante();
+      await BancoLocal().atualizarContaConsultor();
+      await _redefinirSenhaConsultor();
+    }
     final id = await BancoLocal().preferencia('sessao_id');
     if (id != null) {
       final registro = await BancoLocal().usuarioPorId(id);
@@ -30,6 +35,19 @@ class SessaoService extends ChangeNotifier {
 
   static String _hash(String senha, String salt) =>
       sha256.convert(utf8.encode('$salt:$senha')).toString();
+
+  Future<void> _redefinirSenhaConsultor() async {
+    final banco = BancoLocal();
+    final conta = await banco.usuarioPorEmail('consultor@gmail.com');
+    if (conta == null || conta['perfil'] != 'consultor') return;
+    final chave = 'senha_consultor_v1_${conta['id']}';
+    if (await banco.preferencia(chave) == 'concluida') return;
+    await banco.atualizarSenhaUsuario(
+      conta['id'] as String,
+      _hash('senha123', conta['salt'] as String),
+    );
+    await banco.configurar(chave, 'concluida');
+  }
 
   Future<String?> cadastrar(String nome, String email, String senha, PerfilUsuario perfil) async {
     nome = nome.trim();

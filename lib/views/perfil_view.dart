@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../widgets/confirmar_acao.dart';
+import '../widgets/app_logo.dart';
 import '../services/destino_service.dart';
 import '../services/mensagem_service.dart';
 import '../services/consultor_service.dart';
@@ -57,7 +59,10 @@ class PerfilView extends StatelessWidget {
                 Center(
                   child: Text(
                     '${usuario.email} • ${usuario.perfil.rotulo}',
-                    style: const TextStyle(color: AppColors.textSecondary, fontSize: 13),
+                    style: const TextStyle(
+                      color: AppColors.textSecondary,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -76,30 +81,55 @@ class PerfilView extends StatelessWidget {
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.luggage_outlined, color: AppColors.primaryTeal),
+                        leading: const Icon(
+                          Icons.luggage_outlined,
+                          color: AppColors.primaryTeal,
+                        ),
                         title: const Text('Minhas viagens'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => AppNavigation.irParaAba(AppNavigation.viagens),
+                        onTap:
+                            () =>
+                                AppNavigation.irParaAba(AppNavigation.viagens),
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.favorite_border, color: AppColors.primaryTeal),
+                        leading: const Icon(
+                          Icons.favorite_border,
+                          color: AppColors.primaryTeal,
+                        ),
                         title: const Text('Meus favoritos'),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => AppRoutes.abrirFavoritos(context),
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.explore_outlined, color: AppColors.primaryTeal),
+                        leading: const Icon(
+                          Icons.explore_outlined,
+                          color: AppColors.primaryTeal,
+                        ),
                         title: const Text('Explorar destinos'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => AppNavigation.irParaAba(AppNavigation.destinos),
+                        onTap:
+                            () =>
+                                AppNavigation.irParaAba(AppNavigation.destinos),
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.logout, color: Colors.redAccent),
+                        leading: const Icon(
+                          Icons.logout,
+                          color: Colors.redAccent,
+                        ),
                         title: const Text('Sair da conta'),
                         onTap: () async {
+                          if (!await confirmarAcao(
+                                context,
+                                titulo: 'Sair da conta?',
+                                mensagem:
+                                    'Seus dados salvos serão mantidos. Para continuar, entre novamente.',
+                                confirmar: 'Sair',
+                              ) ||
+                              !context.mounted)
+                            return;
                           await SessaoService().sair();
                           await DestinoService().carregar();
                           await ViagemService().carregar();
@@ -110,29 +140,41 @@ class PerfilView extends StatelessWidget {
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.chat_bubble_outline, color: AppColors.primaryTeal),
+                        leading: const Icon(
+                          Icons.chat_bubble_outline,
+                          color: AppColors.primaryTeal,
+                        ),
                         title: const Text('Mensagens dos consultores'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                          builder: (_) => const MensagensView())),
+                        onTap:
+                            () => Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (_) => const MensagensView(),
+                              ),
+                            ),
                       ),
                       const Divider(height: 1),
                       ListTile(
-                        leading: const Icon(Icons.info_outline, color: AppColors.primaryTeal),
+                        leading: const Icon(
+                          Icons.info_outline,
+                          color: AppColors.primaryTeal,
+                        ),
                         title: const Text('Sobre o Connecta Trip'),
                         trailing: const Icon(Icons.chevron_right),
-                        onTap: () => showAboutDialog(
-                          context: context,
-                          applicationName: 'Connecta Trip',
-                          applicationVersion: '1.0.0',
-                          children: const [
-                            Text(
-                              'Organize solicitações e propostas de viagem em um só lugar. '
-                              'O app não emite bilhetes, não processa pagamentos e não mostra '
-                              'preços em tempo real.',
+                        onTap:
+                            () => showAboutDialog(
+                              context: context,
+                              applicationIcon: const AppLogo(height: 48),
+                              applicationName: 'Connecta Trip',
+                              applicationVersion: '1.0.0',
+                              children: const [
+                                Text(
+                                  'Organize solicitações e propostas de viagem em um só lugar. '
+                                  'O app não emite bilhetes, não processa pagamentos e não mostra '
+                                  'preços em tempo real.',
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
                       ),
                     ],
                   ),
@@ -165,7 +207,10 @@ class PerfilView extends StatelessWidget {
             ),
             Text(
               rotulo,
-              style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
+              style: const TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
             ),
           ],
         ),

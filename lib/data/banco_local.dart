@@ -100,6 +100,74 @@ class BancoLocal {
         conflictAlgorithm: ConflictAlgorithm.abort);
   }
 
+  /// Atualiza somente a identidade da conta indicada, preservando senha e ID.
+  /// Pode ser repetida: instalações sem essa conta não são alteradas.
+  Future<void> atualizarContaViajante() async {
+    const antigo = 'heliojr780@gmail.com';
+    const novo = 'viajante@gmail.com';
+    if (kIsWeb) {
+      final usuarios = await _lerWeb('usuarios');
+      final candidatos = usuarios.where((u) =>
+          u['email'] == antigo && u['perfil'] == 'viajante');
+      if (candidatos.isEmpty) return;
+      if (usuarios.any((u) => u['email'] == novo)) {
+        throw StateError('O e-mail viajante@gmail.com já pertence a outra conta.');
+      }
+      candidatos.single.addAll({'nome': 'viajante', 'email': novo});
+      await _gravarWeb('usuarios', usuarios);
+      return;
+    }
+    await (await db).transaction((txn) async {
+      await txn.update('usuarios', {'nome': 'viajante', 'email': novo},
+          where: 'email = ? AND perfil = ?', whereArgs: [antigo, 'viajante']);
+    });
+  }
+
+  /// Migra somente a conta identificada; não altera outras contas de consultor.
+  Future<void> atualizarContaConsultor() async {
+    bool corresponde(Map<String, Object?> usuario) {
+      final nome = (usuario['nome'] as String).trim().toLowerCase();
+      final email = (usuario['email'] as String).trim().toLowerCase();
+      return usuario['perfil'] == 'consultor' &&
+          (nome == 'kevilyn' || email.split('@').first == 'kevilyn');
+    }
+
+    const identidade = {'nome': 'consultor', 'email': 'consultor@gmail.com'};
+    if (kIsWeb) {
+      final usuarios = await _lerWeb('usuarios');
+      final candidatos = usuarios.where(corresponde).toList();
+      if (candidatos.length != 1) return;
+      final conta = candidatos.single;
+      if (usuarios.any((u) => u['email'] == identidade['email'] &&
+          u['id'] != conta['id'])) return;
+      conta.addAll(identidade);
+      await _gravarWeb('usuarios', usuarios);
+      return;
+    }
+    await (await db).transaction((txn) async {
+      final usuarios = await txn.query('usuarios');
+      final candidatos = usuarios.where(corresponde).toList();
+      if (candidatos.length != 1) return;
+      final conta = candidatos.single;
+      if (usuarios.any((u) => u['email'] == identidade['email'] &&
+          u['id'] != conta['id'])) return;
+      await txn.update('usuarios', identidade,
+          where: 'id = ?', whereArgs: [conta['id']]);
+    });
+  }
+
+  Future<void> atualizarSenhaUsuario(String id, String hash) async {
+    if (kIsWeb) {
+      final usuarios = await _lerWeb('usuarios');
+      final conta = usuarios.singleWhere((u) => u['id'] == id);
+      conta['senha_hash'] = hash;
+      await _gravarWeb('usuarios', usuarios);
+      return;
+    }
+    await (await db).update('usuarios', {'senha_hash': hash},
+        where: 'id = ?', whereArgs: [id]);
+  }
+
   Future<Map<String, Object?>?> usuarioPorEmail(String email) async {
     if (kIsWeb) {
       final usuarios = await _lerWeb('usuarios');

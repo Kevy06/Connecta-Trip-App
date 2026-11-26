@@ -28,12 +28,28 @@ class ConnectaTripApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => MaterialApp(
-    title: 'Connecta Trip', debugShowCheckedModeBanner: false,
+    title: 'Connecta Trip',
+    debugShowCheckedModeBanner: false,
     theme: ThemeData(
       scaffoldBackgroundColor: AppColors.background,
       primaryColor: AppColors.primaryTeal,
       colorScheme: ColorScheme.fromSeed(seedColor: AppColors.primaryTeal),
       useMaterial3: true,
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        ),
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size(0, 48),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        ),
+      ),
+      snackBarTheme: const SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+      ),
     ),
     onGenerateRoute: AppRoutes.onGenerateRoute,
     home: ListenableBuilder(
@@ -61,8 +77,10 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
       valueListenable: AppNavigation.abaAtual,
       builder: (context, aba, _) {
         final telas = <Widget>[
-          const HomeView(), const DestinosView(),
-          const ViagensView(), const PerfilView(),
+          const HomeView(),
+          const DestinosView(),
+          const ViagensView(),
+          const PerfilView(),
         ];
         return Scaffold(
           body: IndexedStack(index: aba, children: telas),
@@ -73,17 +91,32 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
             backgroundColor: Colors.white,
             selectedItemColor: AppColors.primaryTeal,
             unselectedItemColor: AppColors.textSecondary,
-            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+            selectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 12,
+            ),
             unselectedLabelStyle: const TextStyle(fontSize: 12),
             items: const [
-              BottomNavigationBarItem(icon: Icon(Icons.home_outlined),
-                activeIcon: Icon(Icons.home), label: 'Início'),
-              BottomNavigationBarItem(icon: Icon(Icons.location_on_outlined),
-                activeIcon: Icon(Icons.location_on), label: 'Destinos'),
-              BottomNavigationBarItem(icon: Icon(Icons.luggage_outlined),
-                activeIcon: Icon(Icons.luggage), label: 'Viagens'),
-              BottomNavigationBarItem(icon: Icon(Icons.person_outline),
-                activeIcon: Icon(Icons.person), label: 'Perfil'),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.home_outlined),
+                activeIcon: Icon(Icons.home),
+                label: 'Início',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.location_on_outlined),
+                activeIcon: Icon(Icons.location_on),
+                label: 'Destinos',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.luggage_outlined),
+                activeIcon: Icon(Icons.luggage),
+                label: 'Viagens',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person_outline),
+                activeIcon: Icon(Icons.person),
+                label: 'Perfil',
+              ),
             ],
           ),
         );
