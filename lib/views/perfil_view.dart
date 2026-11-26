@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import '../services/destino_service.dart';
+import '../services/mensagem_service.dart';
+import '../services/consultor_service.dart';
+import 'mensagens_view.dart';
 import '../services/sessao_service.dart';
 import '../services/viagem_service.dart';
 import '../utils/app_colors.dart';
@@ -11,7 +14,7 @@ class PerfilView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usuario = SessaoService().usuarioAtual;
+    final usuario = SessaoService().usuarioAtual!;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -91,6 +94,27 @@ class PerfilView extends StatelessWidget {
                         title: const Text('Explorar destinos'),
                         trailing: const Icon(Icons.chevron_right),
                         onTap: () => AppNavigation.irParaAba(AppNavigation.destinos),
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.logout, color: Colors.redAccent),
+                        title: const Text('Sair da conta'),
+                        onTap: () async {
+                          await SessaoService().sair();
+                          await DestinoService().carregar();
+                          await ViagemService().carregar();
+                          await ConsultorService().carregar();
+                          await MensagemService().carregar();
+                          AppNavigation.irParaAba(AppNavigation.inicio);
+                        },
+                      ),
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Icon(Icons.chat_bubble_outline, color: AppColors.primaryTeal),
+                        title: const Text('Mensagens dos consultores'),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                          builder: (_) => const MensagensView())),
                       ),
                       const Divider(height: 1),
                       ListTile(

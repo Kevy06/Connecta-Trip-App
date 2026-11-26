@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/destino.dart';
+import '../models/opcao_catalogo.dart';
 import '../presenters/detalhes_destino_presenter.dart';
 import '../utils/app_colors.dart';
 import '../utils/app_routes.dart';
@@ -142,7 +143,16 @@ class _DetalhesDestinoViewState extends State<DetalhesDestinoView> {
             for (var i = 0; i < widget.destino.inclusoes.length; i++) ...[
               if (i > 0) const SizedBox(width: 8),
               Expanded(
-                child: Container(
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(25),
+                  onTap: () => AppRoutes.abrirCatalogo(context,
+                    destino: widget.destino,
+                    tipo: switch (widget.destino.inclusoes[i]) {
+                      'Traslado' => TipoServico.traslado,
+                      'Seguro' => TipoServico.seguro,
+                      _ => TipoServico.hospedagem,
+                    }),
+                  child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 10),
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(25),
@@ -171,6 +181,7 @@ class _DetalhesDestinoViewState extends State<DetalhesDestinoView> {
                     ],
                   ),
                 ),
+                ),
               ),
             ],
           ],
@@ -186,7 +197,17 @@ class _DetalhesDestinoViewState extends State<DetalhesDestinoView> {
         ),
         const SizedBox(height: 10),
         for (var i = 0; i < _presenter.detalhesIncluidos.length; i++)
-          Container(
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: () {
+              if (i == 2) {
+                ConsultorSheet.mostrar(context, assunto: widget.destino.nome);
+              } else {
+                AppRoutes.abrirCatalogo(context, destino: widget.destino,
+                  tipo: i == 0 ? TipoServico.hospedagem : TipoServico.traslado);
+              }
+            },
+            child: Container(
             margin: const EdgeInsets.only(bottom: 8),
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
@@ -219,6 +240,7 @@ class _DetalhesDestinoViewState extends State<DetalhesDestinoView> {
                 ),
                 const Icon(Icons.chevron_right, color: AppColors.textSecondary),
               ],
+            ),
             ),
           ),
         const SizedBox(height: 4),

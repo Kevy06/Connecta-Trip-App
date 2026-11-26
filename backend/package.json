@@ -1,0 +1,8 @@
+{
+  "name": "connecta-trip-api",
+  "private": true,
+  "version": "1.0.0",
+  "description": "API REST local do Connecta Trip, sem dependências externas",
+  "scripts": {"start": "node server.js", "test": "node --test"},
+  "engines": {"node": ">=20"}
+}

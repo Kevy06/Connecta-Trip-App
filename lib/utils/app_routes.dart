@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/destino.dart';
+import '../models/opcao_catalogo.dart';
+import '../views/catalogo_servicos_view.dart';
 import '../views/detalhes_destino_view.dart';
 import '../views/favoritos_view.dart';
 import '../views/solicitacao_view.dart';
@@ -26,7 +28,8 @@ class DetalhesDestinoArgs {
 class SolicitacaoArgs {
   final Destino? destino;
   final Set<String>? interessesIniciais;
-  const SolicitacaoArgs({this.destino, this.interessesIniciais});
+  final String observacoesIniciais;
+  const SolicitacaoArgs({this.destino, this.interessesIniciais, this.observacoesIniciais = ''});
 }
 
 class AppRoutes {
@@ -52,6 +55,7 @@ class AppRoutes {
           builder: (_) => SolicitacaoView(
             destino: args.destino,
             interessesIniciais: args.interessesIniciais,
+            observacoesIniciais: args.observacoesIniciais,
           ),
         );
       case favoritos:
@@ -78,12 +82,20 @@ class AppRoutes {
     BuildContext context, {
     Destino? destino,
     Set<String>? interessesIniciais,
+    String observacoesIniciais = '',
   }) {
     return Navigator.of(context).pushNamed<void>(
       solicitacao,
-      arguments: SolicitacaoArgs(destino: destino, interessesIniciais: interessesIniciais),
+      arguments: SolicitacaoArgs(destino: destino, interessesIniciais: interessesIniciais,
+        observacoesIniciais: observacoesIniciais),
     );
   }
+
+  static Future<void> abrirCatalogo(BuildContext context, {
+    required Destino destino, required TipoServico tipo,
+  }) => Navigator.of(context).push<void>(MaterialPageRoute(
+    builder: (_) => CatalogoServicosView(destino: destino, tipo: tipo),
+  ));
 
   static Future<void> abrirFavoritos(BuildContext context) {
     return Navigator.of(context).pushNamed<void>(favoritos);

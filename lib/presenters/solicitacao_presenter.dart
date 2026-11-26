@@ -36,12 +36,15 @@ class SolicitacaoPresenter {
   SolicitacaoPresenter({
     this.destino,
     Set<String>? interessesIniciais,
+    String observacoesIniciais = '',
     ViagemService? service,
     DateTime? hoje,
     this.atrasoSimulado = const Duration(milliseconds: 600),
   })  : _service = service ?? ViagemService(),
         _hojeFixo = hoje,
-        interesses = <String>{...?interessesIniciais};
+        interesses = <String>{...?interessesIniciais} {
+    observacoes = observacoesIniciais;
+  }
 
   List<Destino> get destinosDisponiveis => DestinoService().obterDestinos();
 
@@ -133,7 +136,7 @@ class SolicitacaoPresenter {
     if (atrasoSimulado > Duration.zero) {
       await Future<void>.delayed(atrasoSimulado); // simula a chamada à API
     }
-    return _service.criar(
+    return await _service.criar(
       destino: destino!,
       inicio: inicio!,
       fim: fim!,

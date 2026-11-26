@@ -27,12 +27,4 @@ class ViagensPresenter {
 
   bool get temViagemConfirmada => viagemDestaque?.status.confirmada ?? false;
 
-  bool aceitarProposta(String id) => _service.aceitarProposta(id);
-
-  /// Avaliação só é aceita após o encerramento do atendimento.
-  bool avaliar(String id, int nota, String comentario) =>
-      _service.avaliar(id, nota, comentario);
-
-  /// Só para demonstração (modo debug): simula o consultor avançando o status.
-  void simularAvanco(String id) => _service.avancarStatusDemo(id);
 }
